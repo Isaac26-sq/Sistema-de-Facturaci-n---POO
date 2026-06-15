@@ -90,7 +90,7 @@ class ExportMixin:
         table = Table(rows, colWidths=col_w, repeatRows=1)
         table.setStyle(TableStyle([
             # Encabezado
-            ('BACKGROUND',      (0, 0), (-1, 0),  colors.HexColor('#212529')),
+            ('BACKGROUND',      (0, 0), (-1, 0),  colors.HexColor('#1a56db')),
             ('TEXTCOLOR',       (0, 0), (-1, 0),  colors.white),
             ('FONTNAME',        (0, 0), (-1, 0),  'Helvetica-Bold'),
             ('FONTSIZE',        (0, 0), (-1, 0),  9),
@@ -129,7 +129,7 @@ class ExportMixin:
 
         headers = self.get_export_headers()
 
-        hdr_fill  = PatternFill(fill_type='solid', fgColor='212529')
+        hdr_fill  = PatternFill(fill_type='solid', fgColor='1a56db')
         hdr_font  = Font(bold=True, color='FFFFFF', size=10)
         hdr_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
         thin      = Side(style='thin', color='DEE2E6')
