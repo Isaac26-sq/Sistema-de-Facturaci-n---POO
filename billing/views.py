@@ -5,10 +5,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.contrib.auth import login
+from .mixins import ExportMixin
 from .models import *
 from .forms import (
     SignUpForm, BrandForm, ProductGroupForm, SupplierForm,
-    ProductForm, CustomerForm, InvoiceForm, InvoiceDetailFormSet
+    ProductForm, CustomerForm, InvoiceForm, InvoiceDetailFormSet,
+    ProductSearchForm,
 )
 from decimal import Decimal
 
@@ -95,8 +97,52 @@ class SupplierDeleteView(LoginRequiredMixin, DeleteView):
 
 
 # === PRODUCT (CBV) ===
-class ProductListView(LoginRequiredMixin, ListView):
-    model = Product; template_name = 'billing/product_list.html'; context_object_name = 'items'
+class ProductListView(ExportMixin, LoginRequiredMixin, ListView):
+    model = Product
+    template_name = 'billing/product_list.html'
+    context_object_name = 'items'
+    paginate_by = 3
+    export_filename = 'productos'
+    export_fields = [
+        ('name',                                                       'Nombre'),
+        ('brand.name',                                                 'Marca'),
+        ('group.name',                                                 'Grupo'),
+        ('unit_price',                                                 'Precio ($)'),
+        ('stock',                                                      'Stock'),
+        (lambda obj: ', '.join(s.name for s in obj.suppliers.all()),   'Proveedores'),
+    ]
+
+    def get_queryset(self):
+        qs = (
+            Product.objects
+            .select_related('brand', 'group')
+            .prefetch_related('suppliers')
+            .order_by('name')
+        )
+        form = ProductSearchForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('name'):
+                qs = qs.filter(name__icontains=form.cleaned_data['name'])
+            if form.cleaned_data.get('brand'):
+                qs = qs.filter(brand=form.cleaned_data['brand'])
+            if form.cleaned_data.get('group'):
+                qs = qs.filter(group=form.cleaned_data['group'])
+            if form.cleaned_data.get('supplier'):
+                qs = qs.filter(suppliers=form.cleaned_data['supplier'])
+            if form.cleaned_data.get('price_min') is not None:
+                qs = qs.filter(unit_price__gte=form.cleaned_data['price_min'])
+            if form.cleaned_data.get('price_max') is not None:
+                qs = qs.filter(unit_price__lte=form.cleaned_data['price_max'])
+            if form.cleaned_data.get('stock_min') is not None:
+                qs = qs.filter(stock__gte=form.cleaned_data['stock_min'])
+            if form.cleaned_data.get('stock_max') is not None:
+                qs = qs.filter(stock__lte=form.cleaned_data['stock_max'])
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)   # ExportMixin pone query_params
+        ctx['search_form'] = ProductSearchForm(self.request.GET)
+        return ctx
 class ProductCreateView(LoginRequiredMixin, CreateView):
     model = Product; form_class = ProductForm; template_name = 'billing/product_form.html'; success_url = reverse_lazy('billing:product_list')
 class ProductUpdateView(LoginRequiredMixin, UpdateView):

@@ -5,6 +5,47 @@ from .models import (
     Brand, ProductGroup, Supplier, Product, Customer, Invoice, InvoiceDetail
 )
 
+_sm_text   = {'class': 'form-control form-control-sm'}
+_sm_select = {'class': 'form-select form-select-sm'}
+_sm_number = {'class': 'form-control form-control-sm', 'min': '0'}
+
+class ProductSearchForm(forms.Form):
+    name = forms.CharField(
+        required=False, label='Nombre',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar nombre…'})
+    )
+    brand = forms.ModelChoiceField(
+        queryset=Brand.objects.order_by('name'),
+        required=False, label='Marca', empty_label='Todas las marcas',
+        widget=forms.Select(attrs=_sm_select)
+    )
+    group = forms.ModelChoiceField(
+        queryset=ProductGroup.objects.order_by('name'),
+        required=False, label='Grupo', empty_label='Todos los grupos',
+        widget=forms.Select(attrs=_sm_select)
+    )
+    supplier = forms.ModelChoiceField(
+        queryset=Supplier.objects.order_by('name'),
+        required=False, label='Proveedor', empty_label='Todos los proveedores',
+        widget=forms.Select(attrs=_sm_select)
+    )
+    price_min = forms.DecimalField(
+        required=False, label='Precio mín',
+        widget=forms.NumberInput(attrs={**_sm_number, 'placeholder': 'Mín', 'step': '0.01'})
+    )
+    price_max = forms.DecimalField(
+        required=False, label='Precio máx',
+        widget=forms.NumberInput(attrs={**_sm_number, 'placeholder': 'Máx', 'step': '0.01'})
+    )
+    stock_min = forms.IntegerField(
+        required=False, label='Stock mín',
+        widget=forms.NumberInput(attrs={**_sm_number, 'placeholder': 'Mín'})
+    )
+    stock_max = forms.IntegerField(
+        required=False, label='Stock máx',
+        widget=forms.NumberInput(attrs={**_sm_number, 'placeholder': 'Máx'})
+    )
+
 class SignUpForm(UserCreationForm):
     email = forms.EmailField(required=True, widget=forms.EmailInput(attrs={'class':'form-control'}))
     first_name = forms.CharField(max_length=100, label='Nombre', widget=forms.TextInput(attrs={'class':'form-control'}))
