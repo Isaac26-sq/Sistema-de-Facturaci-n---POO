@@ -90,11 +90,11 @@ class CustomerProfile(models.Model):
 
 class Invoice(models.Model):
     """Cabecera de factura."""
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='invoices', verbose_name='Factura')
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name='invoices', verbose_name='Cliente')
     invoice_date = models.DateTimeField(auto_now_add=True, verbose_name='Datos de Factura')
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Impuesto')
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Activo')
+    total = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name='Total')
     is_active = models.BooleanField(default=True)
     class Meta: ordering = ['-invoice_date']
     def __str__(self): return f'Invoice #{self.id} - {self.customer}'
