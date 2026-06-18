@@ -95,7 +95,7 @@
       <a class="page-link" href="?{{ query_params }}&page=1">&laquo;</a>
     </li>
     <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-      <a class="page-link" href="?{{ query_params }}&page={{ page_obj.previous_page_number }}">&lsaquo;</a>
+      <a class="page-link" href="{% if page_obj.has_previous %}?{{ query_params }}&page={{ page_obj.previous_page_number }}{% endif %}">&lsaquo;</a>
     </li>
     {% for num in paginator.page_range %}
       {% if page_obj.number == num %}
@@ -109,7 +109,7 @@
       {% endif %}
     {% endfor %}
     <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-      <a class="page-link" href="?{{ query_params }}&page={{ page_obj.next_page_number }}">&rsaquo;</a>
+      <a class="page-link" href="{% if page_obj.has_next %}?{{ query_params }}&page={{ page_obj.next_page_number }}{% endif %}">&rsaquo;</a>
     </li>
     <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
       <a class="page-link" href="?{{ query_params }}&page={{ paginator.num_pages }}">&raquo;</a>
