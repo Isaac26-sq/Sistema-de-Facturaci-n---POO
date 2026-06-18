@@ -6,8 +6,8 @@ urlpatterns = [
     path('', RedirectView.as_view(pattern_name='billing:brand_list'), name='home'),
     path('signup/', views.SignUpView.as_view(), name='signup'),
     
-    # Brand (FBV)
-    path('brands/', views.brand_list, name='brand_list'),
+    # Brand (CBV)
+    path('brands/', views.BrandListView.as_view(), name='brand_list'),
     path('brands/create/', views.brand_create, name='brand_create'),
     path('brands/<int:pk>/edit/', views.brand_update, name='brand_update'),
     path('brands/<int:pk>/delete/', views.brand_delete, name='brand_delete'),

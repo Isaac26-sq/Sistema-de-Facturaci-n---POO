@@ -111,3 +111,93 @@ InvoiceDetailFormSet = forms.inlineformset_factory(
         'unit_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': 0}),
     },
 )
+
+# ── Formularios de búsqueda por módulo ────────────────────────────────────────
+
+_ACTIVE_CHOICES = [('', 'Todos'), ('1', 'Activo'), ('0', 'Inactivo')]
+
+class BrandSearchForm(forms.Form):
+    name = forms.CharField(
+        required=False, label='Nombre',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar nombre…'})
+    )
+    is_active = forms.ChoiceField(
+        choices=_ACTIVE_CHOICES, required=False, label='Estado',
+        widget=forms.Select(attrs=_sm_select)
+    )
+
+class ProductGroupSearchForm(forms.Form):
+    name = forms.CharField(
+        required=False, label='Nombre',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar nombre…'})
+    )
+    is_active = forms.ChoiceField(
+        choices=_ACTIVE_CHOICES, required=False, label='Estado',
+        widget=forms.Select(attrs=_sm_select)
+    )
+
+class SupplierSearchForm(forms.Form):
+    name = forms.CharField(
+        required=False, label='Nombre',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar nombre…'})
+    )
+    contact_name = forms.CharField(
+        required=False, label='Contacto',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar contacto…'})
+    )
+    email = forms.CharField(
+        required=False, label='Email',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar email…'})
+    )
+    phone = forms.CharField(
+        required=False, label='Teléfono',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar teléfono…'})
+    )
+    is_active = forms.ChoiceField(
+        choices=_ACTIVE_CHOICES, required=False, label='Estado',
+        widget=forms.Select(attrs=_sm_select)
+    )
+
+class CustomerSearchForm(forms.Form):
+    dni = forms.CharField(
+        required=False, label='DNI/RUC',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar DNI…'})
+    )
+    last_name = forms.CharField(
+        required=False, label='Apellido',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar apellido…'})
+    )
+    first_name = forms.CharField(
+        required=False, label='Nombre',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar nombre…'})
+    )
+    email = forms.CharField(
+        required=False, label='Email',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar email…'})
+    )
+    phone = forms.CharField(
+        required=False, label='Teléfono',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Buscar teléfono…'})
+    )
+
+class InvoiceSearchForm(forms.Form):
+    customer = forms.CharField(
+        required=False, label='Cliente',
+        widget=forms.TextInput(attrs={**_sm_text, 'placeholder': 'Nombre, apellido o DNI…'})
+    )
+    date_from = forms.DateField(
+        required=False, label='Fecha desde',
+        widget=forms.DateInput(attrs={**_sm_text, 'type': 'date'})
+    )
+    date_to = forms.DateField(
+        required=False, label='Fecha hasta',
+        widget=forms.DateInput(attrs={**_sm_text, 'type': 'date'})
+    )
+    total_min = forms.DecimalField(
+        required=False, label='Total mín',
+        widget=forms.NumberInput(attrs={**_sm_number, 'placeholder': 'Mín', 'step': '0.01'})
+    )
+    total_max = forms.DecimalField(
+        required=False, label='Total máx',
+        widget=forms.NumberInput(attrs={**_sm_number, 'placeholder': 'Máx', 'step': '0.01'})
+    )

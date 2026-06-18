@@ -7,10 +7,12 @@ from django.urls import reverse_lazy
 from django.contrib.auth import login
 from .mixins import ExportMixin
 from .models import *
+from django.db.models import Q
 from .forms import (
     SignUpForm, BrandForm, ProductGroupForm, SupplierForm,
     ProductForm, CustomerForm, InvoiceForm, InvoiceDetailFormSet,
-    ProductSearchForm,
+    ProductSearchForm, BrandSearchForm, ProductGroupSearchForm,
+    SupplierSearchForm, CustomerSearchForm, InvoiceSearchForm,
 )
 from decimal import Decimal
 
@@ -24,11 +26,35 @@ class SignUpView(CreateView):
         login(self.request, self.object)
         return response
 
-# === BRAND (FBV) ===
-@login_required
-def brand_list(request):
-    brands = Brand.objects.all()
-    return render(request, 'billing/brand_list.html', {'brands': brands})
+# === BRAND (CBV) ===
+class BrandListView(ExportMixin, LoginRequiredMixin, ListView):
+    model = Brand
+    template_name = 'billing/brand_list.html'
+    context_object_name = 'items'
+    paginate_by = 10
+    export_filename = 'marcas'
+    export_fields = [
+        ('name',                                           'Nombre'),
+        ('description',                                    'Descripción'),
+        (lambda obj: 'Sí' if obj.is_active else 'No',     'Activo'),
+        (lambda obj: obj.created_at.strftime('%d/%m/%Y'),  'Fecha creación'),
+    ]
+
+    def get_queryset(self):
+        qs = Brand.objects.all()
+        form = BrandSearchForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('name'):
+                qs = qs.filter(name__icontains=form.cleaned_data['name'])
+            val = form.cleaned_data.get('is_active')
+            if val in ('0', '1'):
+                qs = qs.filter(is_active=(val == '1'))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['search_form'] = BrandSearchForm(self.request.GET)
+        return ctx
 
 @login_required
 def brand_create(request):
@@ -63,10 +89,32 @@ def brand_delete(request, pk):
     return render(request, 'billing/brand_confirm_delete.html', {'object': brand})
 
 # === PRODUCTGROUP (CBV) ===
-class ProductGroupListView(LoginRequiredMixin, ListView):
-    model = ProductGroup; 
-    template_name = 'billing/product_group_list.html'; 
+class ProductGroupListView(ExportMixin, LoginRequiredMixin, ListView):
+    model = ProductGroup
+    template_name = 'billing/product_group_list.html'
     context_object_name = 'items'
+    paginate_by = 10
+    export_filename = 'grupos'
+    export_fields = [
+        ('name',                                       'Nombre'),
+        (lambda obj: 'Sí' if obj.is_active else 'No', 'Activo'),
+    ]
+
+    def get_queryset(self):
+        qs = ProductGroup.objects.all()
+        form = ProductGroupSearchForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('name'):
+                qs = qs.filter(name__icontains=form.cleaned_data['name'])
+            val = form.cleaned_data.get('is_active')
+            if val in ('0', '1'):
+                qs = qs.filter(is_active=(val == '1'))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['search_form'] = ProductGroupSearchForm(self.request.GET)
+        return ctx
 
 class ProductGroupCreateView(LoginRequiredMixin, CreateView):
     model = ProductGroup; 
@@ -86,8 +134,43 @@ class ProductGroupDeleteView(LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy('billing:productgroup_list')
 
 # === SUPPLIER (CBV) ===
-class SupplierListView(LoginRequiredMixin, ListView):
-    model = Supplier; template_name = 'billing/supplier_list.html'; context_object_name = 'items'
+class SupplierListView(ExportMixin, LoginRequiredMixin, ListView):
+    model = Supplier
+    template_name = 'billing/supplier_list.html'
+    context_object_name = 'items'
+    paginate_by = 10
+    export_filename = 'proveedores'
+    export_fields = [
+        ('name',                                       'Nombre'),
+        ('contact_name',                               'Contacto'),
+        ('email',                                      'Email'),
+        ('phone',                                      'Teléfono'),
+        ('address',                                    'Dirección'),
+        (lambda obj: 'Sí' if obj.is_active else 'No', 'Activo'),
+    ]
+
+    def get_queryset(self):
+        qs = Supplier.objects.all()
+        form = SupplierSearchForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('name'):
+                qs = qs.filter(name__icontains=form.cleaned_data['name'])
+            if form.cleaned_data.get('contact_name'):
+                qs = qs.filter(contact_name__icontains=form.cleaned_data['contact_name'])
+            if form.cleaned_data.get('email'):
+                qs = qs.filter(email__icontains=form.cleaned_data['email'])
+            if form.cleaned_data.get('phone'):
+                qs = qs.filter(phone__icontains=form.cleaned_data['phone'])
+            val = form.cleaned_data.get('is_active')
+            if val in ('0', '1'):
+                qs = qs.filter(is_active=(val == '1'))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['search_form'] = SupplierSearchForm(self.request.GET)
+        return ctx
+
 class SupplierCreateView(LoginRequiredMixin, CreateView):
     model = Supplier; form_class = SupplierForm; template_name = 'billing/supplier_form.html'; success_url = reverse_lazy('billing:supplier_list')
 class SupplierUpdateView(LoginRequiredMixin, UpdateView):
@@ -152,8 +235,42 @@ class ProductDeleteView(LoginRequiredMixin, DeleteView):
 
 
 # === CUSTOMER (CBV) ===
-class CustomerListView(LoginRequiredMixin, ListView):
-    model = Customer; template_name = 'billing/customer_list.html'; context_object_name = 'items'
+class CustomerListView(ExportMixin, LoginRequiredMixin, ListView):
+    model = Customer
+    template_name = 'billing/customer_list.html'
+    context_object_name = 'items'
+    paginate_by = 10
+    export_filename = 'clientes'
+    export_fields = [
+        ('dni',        'DNI/RUC'),
+        ('last_name',  'Apellido'),
+        ('first_name', 'Nombre'),
+        ('email',      'Email'),
+        ('phone',      'Teléfono'),
+        ('address',    'Dirección'),
+    ]
+
+    def get_queryset(self):
+        qs = Customer.objects.all()
+        form = CustomerSearchForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('dni'):
+                qs = qs.filter(dni__icontains=form.cleaned_data['dni'])
+            if form.cleaned_data.get('last_name'):
+                qs = qs.filter(last_name__icontains=form.cleaned_data['last_name'])
+            if form.cleaned_data.get('first_name'):
+                qs = qs.filter(first_name__icontains=form.cleaned_data['first_name'])
+            if form.cleaned_data.get('email'):
+                qs = qs.filter(email__icontains=form.cleaned_data['email'])
+            if form.cleaned_data.get('phone'):
+                qs = qs.filter(phone__icontains=form.cleaned_data['phone'])
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['search_form'] = CustomerSearchForm(self.request.GET)
+        return ctx
+
 class CustomerCreateView(LoginRequiredMixin, CreateView):
     model = Customer; form_class = CustomerForm; template_name = 'billing/customer_form.html'; success_url = reverse_lazy('billing:customer_list')
 class CustomerUpdateView(LoginRequiredMixin, UpdateView):
@@ -163,8 +280,48 @@ class CustomerDeleteView(LoginRequiredMixin, DeleteView):
 
 
 # === INVOICE (CBV) ===
-class InvoiceListView(LoginRequiredMixin, ListView):
-    model = Invoice; template_name = 'billing/invoice_list.html'; context_object_name = 'items'
+class InvoiceListView(ExportMixin, LoginRequiredMixin, ListView):
+    model = Invoice
+    template_name = 'billing/invoice_list.html'
+    context_object_name = 'items'
+    paginate_by = 10
+    export_filename = 'facturas'
+    export_fields = [
+        ('id',                                                      'N° Factura'),
+        (lambda obj: obj.customer.full_name,                        'Cliente'),
+        ('customer.dni',                                            'DNI/RUC'),
+        (lambda obj: obj.invoice_date.strftime('%d/%m/%Y %H:%M'),   'Fecha'),
+        ('subtotal',                                                'Subtotal ($)'),
+        ('tax',                                                     'IVA ($)'),
+        ('total',                                                   'Total ($)'),
+    ]
+
+    def get_queryset(self):
+        qs = Invoice.objects.select_related('customer').order_by('-invoice_date')
+        form = InvoiceSearchForm(self.request.GET)
+        if form.is_valid():
+            if form.cleaned_data.get('customer'):
+                q = form.cleaned_data['customer']
+                qs = qs.filter(
+                    Q(customer__first_name__icontains=q) |
+                    Q(customer__last_name__icontains=q) |
+                    Q(customer__dni__icontains=q)
+                )
+            if form.cleaned_data.get('date_from'):
+                qs = qs.filter(invoice_date__date__gte=form.cleaned_data['date_from'])
+            if form.cleaned_data.get('date_to'):
+                qs = qs.filter(invoice_date__date__lte=form.cleaned_data['date_to'])
+            if form.cleaned_data.get('total_min') is not None:
+                qs = qs.filter(total__gte=form.cleaned_data['total_min'])
+            if form.cleaned_data.get('total_max') is not None:
+                qs = qs.filter(total__lte=form.cleaned_data['total_max'])
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['search_form'] = InvoiceSearchForm(self.request.GET)
+        return ctx
+
 @login_required
 def invoice_create(request):
     if request.method == 'POST':
