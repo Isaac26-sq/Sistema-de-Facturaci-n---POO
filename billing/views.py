@@ -31,7 +31,7 @@ class BrandListView(ExportMixin, LoginRequiredMixin, ListView):
     model = Brand
     template_name = 'billing/brand_list.html'
     context_object_name = 'items'
-    paginate_by = 10
+    paginate_by = 3
     export_filename = 'marcas'
     export_fields = [
         ('name',                                           'Nombre'),
@@ -93,7 +93,7 @@ class ProductGroupListView(ExportMixin, LoginRequiredMixin, ListView):
     model = ProductGroup
     template_name = 'billing/product_group_list.html'
     context_object_name = 'items'
-    paginate_by = 10
+    paginate_by = 3
     export_filename = 'grupos'
     export_fields = [
         ('name',                                       'Nombre'),
@@ -138,7 +138,7 @@ class SupplierListView(ExportMixin, LoginRequiredMixin, ListView):
     model = Supplier
     template_name = 'billing/supplier_list.html'
     context_object_name = 'items'
-    paginate_by = 10
+    paginate_by = 3
     export_filename = 'proveedores'
     export_fields = [
         ('name',                                       'Nombre'),
@@ -239,7 +239,7 @@ class CustomerListView(ExportMixin, LoginRequiredMixin, ListView):
     model = Customer
     template_name = 'billing/customer_list.html'
     context_object_name = 'items'
-    paginate_by = 10
+    paginate_by = 3
     export_filename = 'clientes'
     export_fields = [
         ('dni',        'DNI/RUC'),
@@ -284,7 +284,7 @@ class InvoiceListView(ExportMixin, LoginRequiredMixin, ListView):
     model = Invoice
     template_name = 'billing/invoice_list.html'
     context_object_name = 'items'
-    paginate_by = 10
+    paginate_by = 3
     export_filename = 'facturas'
     export_fields = [
         ('id',                                                      'N° Factura'),
