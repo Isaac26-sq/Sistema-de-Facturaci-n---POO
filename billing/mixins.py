@@ -25,9 +25,7 @@ class ExportMixin:
             (callable_fn,       'Encabezado'),   # función que recibe el objeto
         ]
 
-    Los botones de exportación en el template usan ?export=pdf / ?export=excel.
-    El mixin intercepta en get(), devuelve el archivo y no renderiza HTML.
-    También expone {{ query_params }} en el contexto (filtros activos sin page ni export).
+    Para columnas dinámicas, sobreescribir get_dynamic_export_fields() en la vista.
     """
 
     export_fields: list = []
@@ -45,17 +43,39 @@ class ExportMixin:
                 val = val()
         return '' if val is None else str(val)
 
+    def get_dynamic_export_fields(self):
+        """
+        Devuelve la lista de campos activos para exportar.
+        Sobreescribir en subclases para columnas dinámicas.
+        """
+        return getattr(self, 'export_fields', [])
+
     def get_export_headers(self):
-        return [label for _, label in self.export_fields]
+        return [label for _, label in self.get_dynamic_export_fields()]
 
     def get_export_row(self, obj):
-        return [self._resolve_field(obj, attr) for attr, _ in self.export_fields]
+        return [self._resolve_field(obj, attr) for attr, _ in self.get_dynamic_export_fields()]
 
     # ── PDF ───────────────────────────────────────────────────────────────
 
     def export_pdf(self, queryset):
         buffer = io.BytesIO()
-        page_size = landscape(A4)
+        fields = self.get_dynamic_export_fields()
+        num_cols = len(fields)
+
+        # Orientación y tamaño de fuente inteligente según número de columnas
+        if num_cols <= 3:
+            page_size = A4
+            font_hdr, font_data, pad = 11, 10, 6
+        elif num_cols <= 5:
+            page_size = landscape(A4)
+            font_hdr, font_data, pad = 10, 9, 6
+        elif num_cols <= 8:
+            page_size = landscape(A4)
+            font_hdr, font_data, pad = 9, 8, 5
+        else:
+            page_size = landscape(A4)
+            font_hdr, font_data, pad = 8, 7, 4
 
         doc = SimpleDocTemplate(
             buffer, pagesize=page_size,
@@ -76,16 +96,25 @@ class ExportMixin:
         ))
         elements.append(Spacer(1, 0.5 * cm))
 
-        headers = self.get_export_headers()
+        if not fields:
+            elements.append(Paragraph('No hay columnas seleccionadas para exportar.', styles['Normal']))
+            doc.build(elements)
+            buffer.seek(0)
+            fname = f'{self.export_filename}_{datetime.now().strftime("%Y%m%d")}.pdf'
+            resp = HttpResponse(buffer.read(), content_type='application/pdf')
+            resp['Content-Disposition'] = f'attachment; filename="{fname}"'
+            return resp
+
+        headers = [label for _, label in fields]
         rows = [[Paragraph(f'<b>{h}</b>', styles['Normal']) for h in headers]]
         for obj in queryset:
             rows.append([
-                Paragraph(str(v), styles['Normal'])
-                for v in self.get_export_row(obj)
+                Paragraph(str(self._resolve_field(obj, attr)), styles['Normal'])
+                for attr, _ in fields
             ])
 
         usable_width = page_size[0] - 3 * cm
-        col_w = [usable_width / len(headers)] * len(headers)
+        col_w = [usable_width / num_cols] * num_cols
 
         table = Table(rows, colWidths=col_w, repeatRows=1)
         table.setStyle(TableStyle([
@@ -93,22 +122,22 @@ class ExportMixin:
             ('BACKGROUND',      (0, 0), (-1, 0),  colors.HexColor('#1a56db')),
             ('TEXTCOLOR',       (0, 0), (-1, 0),  colors.white),
             ('FONTNAME',        (0, 0), (-1, 0),  'Helvetica-Bold'),
-            ('FONTSIZE',        (0, 0), (-1, 0),  9),
+            ('FONTSIZE',        (0, 0), (-1, 0),  font_hdr),
             ('ALIGN',           (0, 0), (-1, 0),  'CENTER'),
             ('VALIGN',          (0, 0), (-1, 0),  'MIDDLE'),
             # Filas de datos
             ('FONTNAME',        (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE',        (0, 1), (-1, -1), 8),
+            ('FONTSIZE',        (0, 1), (-1, -1), font_data),
             ('ALIGN',           (0, 1), (-1, -1), 'LEFT'),
             ('VALIGN',          (0, 1), (-1, -1), 'MIDDLE'),
             # Filas alternas
             ('ROWBACKGROUNDS',  (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
             # Bordes y padding
             ('GRID',            (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
-            ('TOPPADDING',      (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING',   (0, 0), (-1, -1), 5),
-            ('LEFTPADDING',     (0, 0), (-1, -1), 6),
-            ('RIGHTPADDING',    (0, 0), (-1, -1), 6),
+            ('TOPPADDING',      (0, 0), (-1, -1), pad),
+            ('BOTTOMPADDING',   (0, 0), (-1, -1), pad),
+            ('LEFTPADDING',     (0, 0), (-1, -1), pad),
+            ('RIGHTPADDING',    (0, 0), (-1, -1), pad),
         ]))
         elements.append(table)
 
@@ -127,41 +156,46 @@ class ExportMixin:
         ws = wb.active
         ws.title = self.export_filename.capitalize()[:31]
 
-        headers = self.get_export_headers()
+        fields = self.get_dynamic_export_fields()
+        headers = [label for _, label in fields]
 
-        hdr_fill  = PatternFill(fill_type='solid', fgColor='1a56db')
-        hdr_font  = Font(bold=True, color='FFFFFF', size=10)
-        hdr_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
-        thin      = Side(style='thin', color='DEE2E6')
-        border    = Border(left=thin, right=thin, top=thin, bottom=thin)
+        if not headers:
+            ws.cell(row=1, column=1, value='No hay columnas seleccionadas.')
+        else:
+            hdr_fill  = PatternFill(fill_type='solid', fgColor='1a56db')
+            hdr_font  = Font(bold=True, color='FFFFFF', size=10)
+            hdr_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+            thin      = Side(style='thin', color='DEE2E6')
+            border    = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-        for col, text in enumerate(headers, start=1):
-            cell = ws.cell(row=1, column=col, value=text)
-            cell.fill      = hdr_fill
-            cell.font      = hdr_font
-            cell.alignment = hdr_align
-            cell.border    = border
-
-        ws.row_dimensions[1].height = 20
-
-        alt_fill   = PatternFill(fill_type='solid', fgColor='F8F9FA')
-        data_align = Alignment(vertical='center', wrap_text=True)
-
-        for row_idx, obj in enumerate(queryset, start=2):
-            fill = alt_fill if row_idx % 2 == 0 else None
-            for col_idx, value in enumerate(self.get_export_row(obj), start=1):
-                cell = ws.cell(row=row_idx, column=col_idx, value=value)
-                cell.alignment = data_align
+            for col, text in enumerate(headers, start=1):
+                cell = ws.cell(row=1, column=col, value=text)
+                cell.fill      = hdr_fill
+                cell.font      = hdr_font
+                cell.alignment = hdr_align
                 cell.border    = border
-                if fill:
-                    cell.fill = fill
 
-        for col in ws.columns:
-            max_len = max(
-                (len(str(c.value)) for c in col if c.value),
-                default=10,
-            )
-            ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 45)
+            ws.row_dimensions[1].height = 20
+
+            alt_fill   = PatternFill(fill_type='solid', fgColor='F8F9FA')
+            data_align = Alignment(vertical='center', wrap_text=True)
+
+            for row_idx, obj in enumerate(queryset, start=2):
+                fill = alt_fill if row_idx % 2 == 0 else None
+                for col_idx, (attr, _) in enumerate(fields, start=1):
+                    value = self._resolve_field(obj, attr)
+                    cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                    cell.alignment = data_align
+                    cell.border    = border
+                    if fill:
+                        cell.fill = fill
+
+            for col in ws.columns:
+                max_len = max(
+                    (len(str(c.value)) for c in col if c.value),
+                    default=10,
+                )
+                ws.column_dimensions[col[0].column_letter].width = min(max_len + 4, 45)
 
         ws.freeze_panes = 'A2'
 

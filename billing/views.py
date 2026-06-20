@@ -1,8 +1,9 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.contrib.auth import login
 from .mixins import ExportMixin
@@ -15,6 +16,82 @@ from .forms import (
     SupplierSearchForm, CustomerSearchForm, InvoiceSearchForm,
 )
 from decimal import Decimal
+
+# ── Definición de columnas disponibles para Productos ────────────────────────
+PRODUCT_ALL_COLUMNS = [
+    {
+        'key':     'image',
+        'label':   'Imagen',
+        'default': True,
+        'export':  (lambda obj: 'Con imagen' if obj.image else 'Sin imagen', 'Imagen'),
+    },
+    {
+        'key':     'name',
+        'label':   'Nombre',
+        'default': True,
+        'export':  ('name', 'Nombre'),
+    },
+    {
+        'key':     'brand',
+        'label':   'Marca',
+        'default': True,
+        'export':  ('brand.name', 'Marca'),
+    },
+    {
+        'key':     'group',
+        'label':   'Categoría',
+        'default': True,
+        'export':  ('group.name', 'Categoría'),
+    },
+    {
+        'key':     'unit_price',
+        'label':   'Precio',
+        'default': True,
+        'export':  ('unit_price', 'Precio ($)'),
+    },
+    {
+        'key':     'stock',
+        'label':   'Stock',
+        'default': True,
+        'export':  ('stock', 'Stock'),
+    },
+    {
+        'key':     'balance',
+        'label':   'Balance',
+        'default': True,
+        'export':  (lambda obj: str(obj.balance), 'Balance ($)'),
+    },
+    {
+        'key':     'suppliers',
+        'label':   'Proveedores',
+        'default': True,
+        'export':  (lambda obj: ', '.join(s.name for s in obj.suppliers.all()), 'Proveedores'),
+    },
+    {
+        'key':     'id',
+        'label':   'Código (ID)',
+        'default': False,
+        'export':  ('id', 'Código'),
+    },
+    {
+        'key':     'description',
+        'label':   'Descripción',
+        'default': False,
+        'export':  ('description', 'Descripción'),
+    },
+    {
+        'key':     'is_active',
+        'label':   'Estado',
+        'default': False,
+        'export':  (lambda obj: 'Sí' if obj.is_active else 'No', 'Estado'),
+    },
+    {
+        'key':     'created_at',
+        'label':   'Fecha creación',
+        'default': False,
+        'export':  (lambda obj: obj.created_at.strftime('%d/%m/%Y'), 'Fecha creación'),
+    },
+]
 
 # === REGISTRO ===
 class SignUpView(CreateView):
@@ -186,14 +263,24 @@ class ProductListView(ExportMixin, LoginRequiredMixin, ListView):
     context_object_name = 'items'
     paginate_by = 3
     export_filename = 'productos'
-    export_fields = [
-        ('name',                                                       'Nombre'),
-        ('brand.name',                                                 'Marca'),
-        ('group.name',                                                 'Grupo'),
-        ('unit_price',                                                 'Precio ($)'),
-        ('stock',                                                      'Stock'),
-        (lambda obj: ', '.join(s.name for s in obj.suppliers.all()),   'Proveedores'),
-    ]
+    ALL_COLUMNS = PRODUCT_ALL_COLUMNS
+
+    def get_active_col_keys(self):
+        cols_param = self.request.GET.get('cols', '').strip()
+        if cols_param:
+            all_keys = {c['key'] for c in self.ALL_COLUMNS}
+            valid = [k.strip() for k in cols_param.split(',') if k.strip() in all_keys]
+            if valid:
+                return valid
+        return [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+
+    def get_dynamic_export_fields(self):
+        active = set(self.get_active_col_keys())
+        return [
+            col['export']
+            for col in self.ALL_COLUMNS
+            if col['key'] in active and col.get('export') is not None
+        ]
 
     def get_queryset(self):
         qs = (
@@ -223,15 +310,50 @@ class ProductListView(ExportMixin, LoginRequiredMixin, ListView):
         return qs
 
     def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)   # ExportMixin pone query_params
+        ctx = super().get_context_data(**kwargs)
         ctx['search_form'] = ProductSearchForm(self.request.GET)
+        ctx['all_columns'] = self.ALL_COLUMNS
+        ctx['all_col_keys_json'] = json.dumps([c['key'] for c in self.ALL_COLUMNS])
+        ctx['default_col_keys_json'] = json.dumps(
+            [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+        )
         return ctx
 class ProductCreateView(LoginRequiredMixin, CreateView):
-    model = Product; form_class = ProductForm; template_name = 'billing/product_form.html'; success_url = reverse_lazy('billing:product_list')
+    model = Product
+    form_class = ProductForm
+    template_name = 'billing/product_form.html'
+    success_url = reverse_lazy('billing:product_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['is_edit'] = False
+        ctx['page_title'] = 'Nuevo Producto'
+        return ctx
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Producto "{form.instance.name}" creado exitosamente.')
+        return super().form_valid(form)
+
 class ProductUpdateView(LoginRequiredMixin, UpdateView):
-    model = Product; form_class = ProductForm; template_name = 'billing/product_form.html'; success_url = reverse_lazy('billing:product_list')
+    model = Product
+    form_class = ProductForm
+    template_name = 'billing/product_form.html'
+    success_url = reverse_lazy('billing:product_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['is_edit'] = True
+        ctx['page_title'] = f'Editar: {self.object.name}'
+        return ctx
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Producto "{form.instance.name}" actualizado exitosamente.')
+        return super().form_valid(form)
+
 class ProductDeleteView(LoginRequiredMixin, DeleteView):
     model = Product; template_name = 'billing/product_confirm_delete.html'; success_url = reverse_lazy('billing:product_list')
+class ProductDetailView(LoginRequiredMixin, DetailView):
+    model = Product; template_name = 'billing/product_detail.html'; context_object_name = 'product'
 
 
 # === CUSTOMER (CBV) ===
