@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # apps users
     'billing',
     'widget_tweaks',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [

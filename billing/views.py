@@ -400,6 +400,11 @@ class CustomerUpdateView(LoginRequiredMixin, UpdateView):
 class CustomerDeleteView(LoginRequiredMixin, DeleteView):
     model = Customer; template_name = 'billing/customer_confirm_delete.html'; success_url = reverse_lazy('billing:customer_list')
 
+class CustomerDetailView(LoginRequiredMixin, DetailView):
+    model = Customer
+    template_name = 'billing/customer_detail.html'
+    context_object_name = 'customer'
+
 
 # === INVOICE (CBV) ===
 class InvoiceListView(ExportMixin, LoginRequiredMixin, ListView):
