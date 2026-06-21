@@ -189,14 +189,14 @@
               {{ item.description|default:"—" }}
             </span>
           </td>
-          <td class="text-end">
-            <a href="{% url 'billing:product_detail' item.pk %}" class="btn btn-sm btn-outline-info" title="Ver">
+          <td class="text-end text-nowrap">
+            <a href="{% url 'billing:product_detail' item.pk %}" class="btn btn-sm btn-info" title="Ver" aria-label="Ver">
               <i class="bi bi-eye"></i>
             </a>
-            <a href="{% url 'billing:product_update' item.pk %}" class="btn btn-sm btn-warning" title="Editar">
+            <a href="{% url 'billing:product_update' item.pk %}" class="btn btn-sm btn-warning" title="Editar" aria-label="Editar">
               <i class="bi bi-pencil"></i>
             </a>
-            <a href="{% url 'billing:product_delete' item.pk %}" class="btn btn-sm btn-danger" title="Eliminar">
+            <a href="{% url 'billing:product_delete' item.pk %}" class="btn btn-sm btn-danger" title="Eliminar" aria-label="Eliminar">
               <i class="bi bi-trash"></i>
             </a>
           </td>

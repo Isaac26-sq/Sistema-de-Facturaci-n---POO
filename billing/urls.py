@@ -9,18 +9,21 @@ urlpatterns = [
     
     # Brand (CBV)
     path('brands/', views.BrandListView.as_view(), name='brand_list'),
+    path('brands/<int:pk>/', views.BrandDetailView.as_view(), name='brand_detail'),
     path('brands/create/', views.brand_create, name='brand_create'),
     path('brands/<int:pk>/edit/', views.brand_update, name='brand_update'),
     path('brands/<int:pk>/delete/', views.brand_delete, name='brand_delete'),
 
     # ProductGroup
     path('groups/', views.ProductGroupListView.as_view(), name='productgroup_list'),
+    path('groups/<int:pk>/', views.ProductGroupDetailView.as_view(), name='productgroup_detail'),
     path('groups/create/', views.ProductGroupCreateView.as_view(), name='productgroup_create'),
     path('groups/<int:pk>/edit/', views.ProductGroupUpdateView.as_view(), name='productgroup_update'),
     path('groups/<int:pk>/delete/', views.ProductGroupDeleteView.as_view(), name='productgroup_delete'),
 
     # SupplierGroup
     path('suppliers/', views.SupplierListView.as_view(), name='supplier_list'),
+    path('suppliers/<int:pk>/', views.SupplierDetailView.as_view(), name='supplier_detail'),
     path('suppliers/create/', views.SupplierCreateView.as_view(), name='supplier_create'),
     path('suppliers/<int:pk>/edit/', views.SupplierUpdateView.as_view(), name='supplier_update'),
     path('suppliers/<int:pk>/delete/', views.SupplierDeleteView.as_view(), name='supplier_delete'),

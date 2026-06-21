@@ -110,6 +110,182 @@ PRODUCT_ALL_COLUMNS = [
     },
 ]
 
+# ── Definición de columnas disponibles para Marcas ────────────────────────
+BRAND_ALL_COLUMNS = [
+    {
+        'key':     'name',
+        'label':   'Nombre',
+        'default': True,
+        'export':  ('name', 'Nombre'),
+    },
+    {
+        'key':     'description',
+        'label':   'Descripción',
+        'default': True,
+        'export':  ('description', 'Descripción'),
+    },
+    {
+        'key':     'is_active',
+        'label':   'Estado',
+        'default': True,
+        'export':  (lambda obj: 'Sí' if obj.is_active else 'No', 'Estado'),
+    },
+    {
+        'key':     'created_at',
+        'label':   'Fecha creación',
+        'default': False,
+        'export':  (lambda obj: obj.created_at.strftime('%d/%m/%Y'), 'Fecha creación'),
+    },
+]
+
+# ── Definición de columnas disponibles para Grupos de Productos ────────────────────────
+PRODUCTGROUP_ALL_COLUMNS = [
+    {
+        'key':     'name',
+        'label':   'Nombre',
+        'default': True,
+        'export':  ('name', 'Nombre'),
+    },
+    {
+        'key':     'is_active',
+        'label':   'Estado',
+        'default': True,
+        'export':  (lambda obj: 'Sí' if obj.is_active else 'No', 'Estado'),
+    },
+    {
+        'key':     'created_at',
+        'label':   'Fecha creación',
+        'default': False,
+        'export':  (lambda obj: obj.created_at.strftime('%d/%m/%Y'), 'Fecha creación'),
+    },
+]
+
+# ── Definición de columnas disponibles para Proveedores ────────────────────────
+SUPPLIER_ALL_COLUMNS = [
+    {
+        'key':     'name',
+        'label':   'Nombre',
+        'default': True,
+        'export':  ('name', 'Nombre'),
+    },
+    {
+        'key':     'contact_name',
+        'label':   'Contacto',
+        'default': True,
+        'export':  ('contact_name', 'Contacto'),
+    },
+    {
+        'key':     'email',
+        'label':   'Email',
+        'default': True,
+        'export':  ('email', 'Email'),
+    },
+    {
+        'key':     'phone',
+        'label':   'Teléfono',
+        'default': True,
+        'export':  ('phone', 'Teléfono'),
+    },
+    {
+        'key':     'address',
+        'label':   'Dirección',
+        'default': False,
+        'export':  ('address', 'Dirección'),
+    },
+    {
+        'key':     'is_active',
+        'label':   'Estado',
+        'default': False,
+        'export':  (lambda obj: 'Sí' if obj.is_active else 'No', 'Estado'),
+    },
+]
+
+# ── Definición de columnas disponibles para Clientes ────────────────────────
+CUSTOMER_ALL_COLUMNS = [
+    {
+        'key':     'dni',
+        'label':   'DNI/RUC',
+        'default': True,
+        'export':  ('dni', 'DNI/RUC'),
+    },
+    {
+        'key':     'last_name',
+        'label':   'Apellido',
+        'default': True,
+        'export':  ('last_name', 'Apellido'),
+    },
+    {
+        'key':     'first_name',
+        'label':   'Nombre',
+        'default': True,
+        'export':  ('first_name', 'Nombre'),
+    },
+    {
+        'key':     'email',
+        'label':   'Email',
+        'default': True,
+        'export':  ('email', 'Email'),
+    },
+    {
+        'key':     'phone',
+        'label':   'Teléfono',
+        'default': True,
+        'export':  ('phone', 'Teléfono'),
+    },
+    {
+        'key':     'address',
+        'label':   'Dirección',
+        'default': False,
+        'export':  ('address', 'Dirección'),
+    },
+    {
+        'key':     'is_active',
+        'label':   'Estado',
+        'default': False,
+        'export':  (lambda obj: 'Sí' if obj.is_active else 'No', 'Estado'),
+    },
+]
+
+# ── Definición de columnas disponibles para Facturas ────────────────────────
+INVOICE_ALL_COLUMNS = [
+    {
+        'key':     'id',
+        'label':   'N° Factura',
+        'default': True,
+        'export':  ('id', 'N° Factura'),
+    },
+    {
+        'key':     'customer',
+        'label':   'Cliente',
+        'default': True,
+        'export':  (lambda obj: obj.customer.full_name, 'Cliente'),
+    },
+    {
+        'key':     'invoice_date',
+        'label':   'Fecha',
+        'default': True,
+        'export':  (lambda obj: obj.invoice_date.strftime('%d/%m/%Y %H:%M'), 'Fecha'),
+    },
+    {
+        'key':     'subtotal',
+        'label':   'Subtotal',
+        'default': True,
+        'export':  ('subtotal', 'Subtotal ($)'),
+    },
+    {
+        'key':     'tax',
+        'label':   'IVA',
+        'default': True,
+        'export':  ('tax', 'IVA ($)'),
+    },
+    {
+        'key':     'total',
+        'label':   'Total',
+        'default': True,
+        'export':  ('total', 'Total ($)'),
+    },
+]
+
 # === REGISTRO ===
 class SignUpView(CreateView):
     form_class = SignUpForm
@@ -127,12 +303,28 @@ class BrandListView(ExportMixin, LoginRequiredMixin, ListView):
     context_object_name = 'items'
     paginate_by = 3
     export_filename = 'marcas'
-    export_fields = [
-        ('name',                                           'Nombre'),
-        ('description',                                    'Descripción'),
-        (lambda obj: 'Sí' if obj.is_active else 'No',     'Activo'),
-        (lambda obj: obj.created_at.strftime('%d/%m/%Y'),  'Fecha creación'),
-    ]
+    ALL_COLUMNS = BRAND_ALL_COLUMNS
+
+    def get_active_col_keys(self):
+        cols_param = self.request.GET.get('cols', '').strip()
+        if cols_param:
+            all_keys = {c['key'] for c in self.ALL_COLUMNS}
+            valid = [k.strip() for k in cols_param.split(',') if k.strip() in all_keys]
+            if valid:
+                return valid
+        return [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+
+    def get_dynamic_export_fields(self):
+        active = set(self.get_active_col_keys())
+        return [
+            col['export']
+            for col in self.ALL_COLUMNS
+            if col['key'] in active and col.get('export') is not None
+        ]
+
+    @property
+    def export_fields(self):
+        return self.get_dynamic_export_fields()
 
     def get_queryset(self):
         qs = Brand.objects.all()
@@ -148,6 +340,11 @@ class BrandListView(ExportMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['search_form'] = BrandSearchForm(self.request.GET)
+        ctx['all_columns'] = self.ALL_COLUMNS
+        ctx['all_col_keys_json'] = json.dumps([c['key'] for c in self.ALL_COLUMNS])
+        ctx['default_col_keys_json'] = json.dumps(
+            [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+        )
         return ctx
 
 @login_required
@@ -176,7 +373,7 @@ def brand_update(request, pk):
     return render(request, 'billing/brand_form.html', {'form':form, 'title':'Editar Marca'})
 
 @login_required
-@audit_action('DELETE_BRAND')  
+@audit_action('DELETE_BRAND')
 def brand_delete(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
     if request.method == 'POST':
@@ -185,6 +382,11 @@ def brand_delete(request, pk):
         return redirect('billing:brand_list')
     return render(request, 'billing/brand_confirm_delete.html', {'object': brand})
 
+class BrandDetailView(LoginRequiredMixin, DetailView):
+    model = Brand
+    template_name = 'billing/brand_detail.html'
+    context_object_name = 'brand'
+
 # === PRODUCTGROUP (CBV) ===
 class ProductGroupListView(ExportMixin, LoginRequiredMixin, ListView):
     model = ProductGroup
@@ -192,10 +394,28 @@ class ProductGroupListView(ExportMixin, LoginRequiredMixin, ListView):
     context_object_name = 'items'
     paginate_by = 3
     export_filename = 'grupos'
-    export_fields = [
-        ('name',                                       'Nombre'),
-        (lambda obj: 'Sí' if obj.is_active else 'No', 'Activo'),
-    ]
+    ALL_COLUMNS = PRODUCTGROUP_ALL_COLUMNS
+
+    def get_active_col_keys(self):
+        cols_param = self.request.GET.get('cols', '').strip()
+        if cols_param:
+            all_keys = {c['key'] for c in self.ALL_COLUMNS}
+            valid = [k.strip() for k in cols_param.split(',') if k.strip() in all_keys]
+            if valid:
+                return valid
+        return [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+
+    def get_dynamic_export_fields(self):
+        active = set(self.get_active_col_keys())
+        return [
+            col['export']
+            for col in self.ALL_COLUMNS
+            if col['key'] in active and col.get('export') is not None
+        ]
+
+    @property
+    def export_fields(self):
+        return self.get_dynamic_export_fields()
 
     def get_queryset(self):
         qs = ProductGroup.objects.all()
@@ -211,6 +431,11 @@ class ProductGroupListView(ExportMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['search_form'] = ProductGroupSearchForm(self.request.GET)
+        ctx['all_columns'] = self.ALL_COLUMNS
+        ctx['all_col_keys_json'] = json.dumps([c['key'] for c in self.ALL_COLUMNS])
+        ctx['default_col_keys_json'] = json.dumps(
+            [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+        )
         return ctx
 
 class ProductGroupCreateView(LoginRequiredMixin, CreateView):
@@ -226,10 +451,15 @@ class ProductGroupUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('billing:productgroup_list')
 
 class ProductGroupDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
-    model = ProductGroup; 
-    template_name = 'billing/product_group_confirm_delete.html'; 
+    model = ProductGroup;
+    template_name = 'billing/product_group_confirm_delete.html';
     success_url = reverse_lazy('billing:productgroup_list')
-    staff_redirect_url = '/groups/'  
+    staff_redirect_url = '/groups/'
+
+class ProductGroupDetailView(LoginRequiredMixin, DetailView):
+    model = ProductGroup
+    template_name = 'billing/product_group_detail.html'
+    context_object_name = 'productgroup'
 
 # === SUPPLIER (CBV) ===
 class SupplierListView(ExportMixin, LoginRequiredMixin, ListView):
@@ -238,14 +468,28 @@ class SupplierListView(ExportMixin, LoginRequiredMixin, ListView):
     context_object_name = 'items'
     paginate_by = 3
     export_filename = 'proveedores'
-    export_fields = [
-        ('name',                                       'Nombre'),
-        ('contact_name',                               'Contacto'),
-        ('email',                                      'Email'),
-        ('phone',                                      'Teléfono'),
-        ('address',                                    'Dirección'),
-        (lambda obj: 'Sí' if obj.is_active else 'No', 'Activo'),
-    ]
+    ALL_COLUMNS = SUPPLIER_ALL_COLUMNS
+
+    def get_active_col_keys(self):
+        cols_param = self.request.GET.get('cols', '').strip()
+        if cols_param:
+            all_keys = {c['key'] for c in self.ALL_COLUMNS}
+            valid = [k.strip() for k in cols_param.split(',') if k.strip() in all_keys]
+            if valid:
+                return valid
+        return [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+
+    def get_dynamic_export_fields(self):
+        active = set(self.get_active_col_keys())
+        return [
+            col['export']
+            for col in self.ALL_COLUMNS
+            if col['key'] in active and col.get('export') is not None
+        ]
+
+    @property
+    def export_fields(self):
+        return self.get_dynamic_export_fields()
 
     def get_queryset(self):
         qs = Supplier.objects.all()
@@ -267,6 +511,11 @@ class SupplierListView(ExportMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['search_form'] = SupplierSearchForm(self.request.GET)
+        ctx['all_columns'] = self.ALL_COLUMNS
+        ctx['all_col_keys_json'] = json.dumps([c['key'] for c in self.ALL_COLUMNS])
+        ctx['default_col_keys_json'] = json.dumps(
+            [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+        )
         return ctx
 
 class SupplierCreateView(LoginRequiredMixin, CreateView):
@@ -278,12 +527,16 @@ class SupplierUpdateView(LoginRequiredMixin, UpdateView):
     form_class = SupplierForm; 
     template_name = 'billing/supplier_form.html'; 
     success_url = reverse_lazy('billing:supplier_list')
-class SupplierDeleteView(LoginRequiredMixin, StaffRequiredMixin ,DeleteView):
-    model = Supplier; 
-    template_name = 'billing/supplier_confirm_delete.html'; 
+class SupplierDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Supplier;
+    template_name = 'billing/supplier_confirm_delete.html';
     success_url = reverse_lazy('billing:supplier_list')
     staff_redirect_url = '/suppliers/'
 
+class SupplierDetailView(LoginRequiredMixin, DetailView):
+    model = Supplier
+    template_name = 'billing/supplier_detail.html'
+    context_object_name = 'supplier'
 
 # === PRODUCT (CBV) ===
 class ProductListView(ExportMixin, LoginRequiredMixin, ListView):
@@ -398,14 +651,28 @@ class CustomerListView(ExportMixin, LoginRequiredMixin, ListView):
     context_object_name = 'items'
     paginate_by = 3
     export_filename = 'clientes'
-    export_fields = [
-        ('dni',        'DNI/RUC'),
-        ('last_name',  'Apellido'),
-        ('first_name', 'Nombre'),
-        ('email',      'Email'),
-        ('phone',      'Teléfono'),
-        ('address',    'Dirección'),
-    ]
+    ALL_COLUMNS = CUSTOMER_ALL_COLUMNS
+
+    def get_active_col_keys(self):
+        cols_param = self.request.GET.get('cols', '').strip()
+        if cols_param:
+            all_keys = {c['key'] for c in self.ALL_COLUMNS}
+            valid = [k.strip() for k in cols_param.split(',') if k.strip() in all_keys]
+            if valid:
+                return valid
+        return [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+
+    def get_dynamic_export_fields(self):
+        active = set(self.get_active_col_keys())
+        return [
+            col['export']
+            for col in self.ALL_COLUMNS
+            if col['key'] in active and col.get('export') is not None
+        ]
+
+    @property
+    def export_fields(self):
+        return self.get_dynamic_export_fields()
 
     def get_queryset(self):
         qs = Customer.objects.all()
@@ -426,6 +693,11 @@ class CustomerListView(ExportMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['search_form'] = CustomerSearchForm(self.request.GET)
+        ctx['all_columns'] = self.ALL_COLUMNS
+        ctx['all_col_keys_json'] = json.dumps([c['key'] for c in self.ALL_COLUMNS])
+        ctx['default_col_keys_json'] = json.dumps(
+            [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+        )
         return ctx
 
 class CustomerCreateView(LoginRequiredMixin, CreateView):
@@ -457,15 +729,28 @@ class InvoiceListView(ExportMixin, LoginRequiredMixin, ListView):
     context_object_name = 'items'
     paginate_by = 3
     export_filename = 'facturas'
-    export_fields = [
-        ('id',                                                      'N° Factura'),
-        (lambda obj: obj.customer.full_name,                        'Cliente'),
-        ('customer.dni',                                            'DNI/RUC'),
-        (lambda obj: obj.invoice_date.strftime('%d/%m/%Y %H:%M'),   'Fecha'),
-        ('subtotal',                                                'Subtotal ($)'),
-        ('tax',                                                     'IVA ($)'),
-        ('total',                                                   'Total ($)'),
-    ]
+    ALL_COLUMNS = INVOICE_ALL_COLUMNS
+
+    def get_active_col_keys(self):
+        cols_param = self.request.GET.get('cols', '').strip()
+        if cols_param:
+            all_keys = {c['key'] for c in self.ALL_COLUMNS}
+            valid = [k.strip() for k in cols_param.split(',') if k.strip() in all_keys]
+            if valid:
+                return valid
+        return [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+
+    def get_dynamic_export_fields(self):
+        active = set(self.get_active_col_keys())
+        return [
+            col['export']
+            for col in self.ALL_COLUMNS
+            if col['key'] in active and col.get('export') is not None
+        ]
+
+    @property
+    def export_fields(self):
+        return self.get_dynamic_export_fields()
 
     def get_queryset(self):
         qs = Invoice.objects.select_related('customer').order_by('-invoice_date')
@@ -491,6 +776,11 @@ class InvoiceListView(ExportMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['search_form'] = InvoiceSearchForm(self.request.GET)
+        ctx['all_columns'] = self.ALL_COLUMNS
+        ctx['all_col_keys_json'] = json.dumps([c['key'] for c in self.ALL_COLUMNS])
+        ctx['default_col_keys_json'] = json.dumps(
+            [c['key'] for c in self.ALL_COLUMNS if c.get('default', True)]
+        )
         return ctx
 
 @login_required

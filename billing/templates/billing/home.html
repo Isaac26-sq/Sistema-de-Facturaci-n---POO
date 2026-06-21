@@ -1,11 +1,11 @@
 {% extends 'billing/base.html' %}
-{% block title %}Home - Sales System{% endblock %}
+{% block title %}Home - Sistema de Ventas{% endblock %}
 {% block content %}
 
 <!-- Bienvenida -->
 <div class="p-4 mb-4 bg-light rounded-3">
-  <h1>Welcome, {{ user.first_name|default:user.username }}!</h1>
-  <p class="lead">Sales & Billing Management System</p>
+  <h1>Bienvenido, {{ user.first_name|default:user.username }}!</h1>
+  <p class="lead">Sistema de gestión de ventas y facturación </p>
 </div>
 
 <!-- Tarjetas de resumen -->
@@ -14,8 +14,8 @@
     <div class="card text-white bg-primary">
       <div class="card-body text-center">
         <h2>{{ total_brands }}</h2>
-        <p>Brands</p>
-        <a href="{% url 'billing:brand_list' %}" class="text-white">View all</a>
+        <p>Marcas</p>
+        <a href="{% url 'billing:brand_list' %}" class="text-white">Ver todo</a>
       </div>
     </div>
   </div>
@@ -23,8 +23,8 @@
     <div class="card text-white bg-success">
       <div class="card-body text-center">
         <h2>{{ total_products }}</h2>
-        <p>Products</p>
-        <a href="{% url 'billing:product_list' %}" class="text-white">View all</a>
+        <p>Productos</p>
+        <a href="{% url 'billing:product_list' %}" class="text-white">Ver todo</a>
       </div>
     </div>
   </div>
@@ -32,8 +32,8 @@
     <div class="card text-white bg-info">
       <div class="card-body text-center">
         <h2>{{ total_customers }}</h2>
-        <p>Customers</p>
-        <a href="{% url 'billing:customer_list' %}" class="text-white">View all</a>
+        <p>Clientes</p>
+        <a href="{% url 'billing:customer_list' %}" class="text-white">Ver todo</a>
       </div>
     </div>
   </div>
@@ -41,8 +41,8 @@
     <div class="card text-white bg-warning">
       <div class="card-body text-center">
         <h2>{{ total_invoices }}</h2>
-        <p>Invoices</p>
-        <a href="{% url 'billing:invoice_list' %}" class="text-white">View all</a>
+        <p>Facturas</p>
+        <a href="{% url 'billing:invoice_list' %}" class="text-white">Ver todo</a>
       </div>
     </div>
   </div>
@@ -52,10 +52,10 @@
   <!-- Últimas facturas -->
   <div class="col-md-7">
     <div class="card">
-      <div class="card-header bg-dark text-white"><h5>Recent Invoices</h5></div>
+      <div class="card-header bg-dark text-white"><h5>Facturas recientes</h5></div>
       <div class="card-body">
         <table class="table table-sm">
-          <thead><tr><th>#</th><th>Customer</th><th>Date</th><th>Total</th></tr></thead>
+          <thead><tr><th>#</th><th>Clientes</th><th>Fecha</th><th>Total</th></tr></thead>
           <tbody>
             {% for inv in recent_invoices %}
             <tr>
@@ -65,7 +65,7 @@
               <td>${{ inv.total }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="4" class="text-center">No invoices yet.</td></tr>
+            <tr><td colspan="4" class="text-center">Aún no hay facturas</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -75,15 +75,15 @@
   <!-- Productos con bajo stock -->
   <div class="col-md-5">
     <div class="card">
-      <div class="card-header bg-danger text-white"><h5>Low Stock Alert</h5></div>
+      <div class="card-header bg-danger text-white"><h5>Alerta de existencias bajas</h5></div>
       <div class="card-body">
         <table class="table table-sm">
-          <thead><tr><th>Product</th><th>Stock</th></tr></thead>
+          <thead><tr><th>Producto</th><th>Stock</th></tr></thead>
           <tbody>
             {% for p in low_stock %}
             <tr><td>{{ p.name }}</td><td><span class="badge bg-danger">{{ p.stock }}</span></td></tr>
             {% empty %}
-            <tr><td colspan="2" class="text-center text-success">All products have stock.</td></tr>
+            <tr><td colspan="2" class="text-center text-success">Todos los productos están disponibles en stock.</td></tr>
             {% endfor %}
           </tbody>
         </table>
