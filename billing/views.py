@@ -16,6 +16,23 @@ from .forms import (
     SupplierSearchForm, CustomerSearchForm, InvoiceSearchForm,
 )
 from decimal import Decimal
+from shared.mixins import StaffRequiredMixin
+from shared.decorators import audit_action
+
+# === HOME (Página principal) ===
+@login_required
+def home(request):
+    """Vista principal del sistema. Muestra resumen general."""
+    context = {
+        'total_brands': Brand.objects.count(),
+        'total_products': Product.objects.count(),
+        'total_customers': Customer.objects.count(),
+        'total_invoices': Invoice.objects.count(),
+        'recent_invoices': Invoice.objects.all()[:5],  # Últimas 5
+        'low_stock': Product.objects.filter(stock__lte=5, is_active=True),
+    }
+    return render(request, 'billing/home.html', context)
+
 
 # ── Definición de columnas disponibles para Productos ────────────────────────
 PRODUCT_ALL_COLUMNS = [
@@ -134,6 +151,7 @@ class BrandListView(ExportMixin, LoginRequiredMixin, ListView):
         return ctx
 
 @login_required
+@audit_action('CREATE_BRAND')  
 def brand_create(request):
     if request.method == 'POST':
         form = BrandForm(request.POST)
@@ -145,6 +163,7 @@ def brand_create(request):
     return render(request, 'billing/brand_form.html', {'form':form, 'title':'Crear Marca'})
 
 @login_required
+@audit_action('UPDATE_BRAND')  
 def brand_update(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
     if request.method == 'POST':
@@ -157,6 +176,7 @@ def brand_update(request, pk):
     return render(request, 'billing/brand_form.html', {'form':form, 'title':'Editar Marca'})
 
 @login_required
+@audit_action('DELETE_BRAND')  
 def brand_delete(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
     if request.method == 'POST':
@@ -205,10 +225,11 @@ class ProductGroupUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'billing/product_group_form.html'; 
     success_url = reverse_lazy('billing:productgroup_list')
 
-class ProductGroupDeleteView(LoginRequiredMixin, DeleteView):
+class ProductGroupDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     model = ProductGroup; 
     template_name = 'billing/product_group_confirm_delete.html'; 
     success_url = reverse_lazy('billing:productgroup_list')
+    staff_redirect_url = '/groups/'  
 
 # === SUPPLIER (CBV) ===
 class SupplierListView(ExportMixin, LoginRequiredMixin, ListView):
@@ -249,11 +270,19 @@ class SupplierListView(ExportMixin, LoginRequiredMixin, ListView):
         return ctx
 
 class SupplierCreateView(LoginRequiredMixin, CreateView):
-    model = Supplier; form_class = SupplierForm; template_name = 'billing/supplier_form.html'; success_url = reverse_lazy('billing:supplier_list')
+    model = Supplier; form_class = SupplierForm; 
+    template_name = 'billing/supplier_form.html'; 
+    success_url = reverse_lazy('billing:supplier_list')
 class SupplierUpdateView(LoginRequiredMixin, UpdateView):
-    model = Supplier; form_class = SupplierForm; template_name = 'billing/supplier_form.html'; success_url = reverse_lazy('billing:supplier_list')
-class SupplierDeleteView(LoginRequiredMixin, DeleteView):
-    model = Supplier; template_name = 'billing/supplier_confirm_delete.html'; success_url = reverse_lazy('billing:supplier_list')
+    model = Supplier; 
+    form_class = SupplierForm; 
+    template_name = 'billing/supplier_form.html'; 
+    success_url = reverse_lazy('billing:supplier_list')
+class SupplierDeleteView(LoginRequiredMixin, StaffRequiredMixin ,DeleteView):
+    model = Supplier; 
+    template_name = 'billing/supplier_confirm_delete.html'; 
+    success_url = reverse_lazy('billing:supplier_list')
+    staff_redirect_url = '/suppliers/'
 
 
 # === PRODUCT (CBV) ===
@@ -350,10 +379,16 @@ class ProductUpdateView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, f'Producto "{form.instance.name}" actualizado exitosamente.')
         return super().form_valid(form)
 
-class ProductDeleteView(LoginRequiredMixin, DeleteView):
-    model = Product; template_name = 'billing/product_confirm_delete.html'; success_url = reverse_lazy('billing:product_list')
+class ProductDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Product; 
+    template_name = 'billing/product_confirm_delete.html'; 
+    success_url = reverse_lazy('billing:product_list')
+    staff_redirect_url = '/products/'
 class ProductDetailView(LoginRequiredMixin, DetailView):
-    model = Product; template_name = 'billing/product_detail.html'; context_object_name = 'product'
+    model = Product; 
+    template_name = 'billing/product_detail.html'; 
+    context_object_name = 'product'
+
 
 
 # === CUSTOMER (CBV) ===
@@ -394,11 +429,20 @@ class CustomerListView(ExportMixin, LoginRequiredMixin, ListView):
         return ctx
 
 class CustomerCreateView(LoginRequiredMixin, CreateView):
-    model = Customer; form_class = CustomerForm; template_name = 'billing/customer_form.html'; success_url = reverse_lazy('billing:customer_list')
+    model = Customer; 
+    form_class = CustomerForm; 
+    template_name = 'billing/customer_form.html'; 
+    success_url = reverse_lazy('billing:customer_list')
 class CustomerUpdateView(LoginRequiredMixin, UpdateView):
-    model = Customer; form_class = CustomerForm; template_name = 'billing/customer_form.html'; success_url = reverse_lazy('billing:customer_list')
-class CustomerDeleteView(LoginRequiredMixin, DeleteView):
-    model = Customer; template_name = 'billing/customer_confirm_delete.html'; success_url = reverse_lazy('billing:customer_list')
+    model = Customer; 
+    form_class = CustomerForm; 
+    template_name = 'billing/customer_form.html'; 
+    success_url = reverse_lazy('billing:customer_list')
+class CustomerDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Customer; 
+    template_name = 'billing/customer_confirm_delete.html'; 
+    success_url = reverse_lazy('billing:customer_list')
+    staff_redirect_url = '/customers/'
 
 class CustomerDetailView(LoginRequiredMixin, DetailView):
     model = Customer
@@ -473,6 +517,18 @@ def invoice_create(request):
     return render(request, 'billing/invoice_form.html', {
         'form': form, 'formset': formset, 'title': 'Nueva Factura'
     })
-class InvoiceDeleteView(LoginRequiredMixin, DeleteView):
-    model = Invoice; template_name = 'billing/invoice_confirm_delete.html'; success_url = reverse_lazy('billing:invoice_list')
+class InvoiceDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Invoice; 
+    template_name = 'billing/invoice_confirm_delete.html'; 
+    success_url = reverse_lazy('billing:invoice_list')
+    staff_redirect_url = '/invoices/'
 
+@login_required
+def invoice_detail(request, pk):
+    """Muestra el detalle completo de una factura."""
+    invoice = get_object_or_404(
+        Invoice.objects.select_related('customer')
+                       .prefetch_related('details__product'),
+        pk=pk
+    )
+    return render(request, 'billing/invoice_detail.html', {'invoice': invoice})

@@ -3,7 +3,8 @@ from django.views.generic import RedirectView
 from . import views
 app_name = 'billing'
 urlpatterns = [
-    path('', RedirectView.as_view(pattern_name='billing:brand_list'), name='home'),
+    # Home (Página principal)
+    path('', views.home, name='home'),  
     path('signup/', views.SignUpView.as_view(), name='signup'),
     
     # Brand (CBV)
@@ -41,6 +42,7 @@ urlpatterns = [
     # Invoice
     path('invoices/', views.InvoiceListView.as_view(), name='invoice_list'),
     path('invoices/create/', views.invoice_create, name='invoice_create'),
+    path('invoices/<int:pk>/', views.invoice_detail, name='invoice_detail'),
     path('invoices/<int:pk>/delete/', views.InvoiceDeleteView.as_view(), name='invoice_delete'),
 
 ]

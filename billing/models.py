@@ -1,4 +1,6 @@
 from django.db import models
+from shared.validators import validate_cedula_ec
+
 
 class Brand(models.Model):
     """Marcas de productos."""
@@ -66,7 +68,7 @@ class Product(models.Model):
 
 class Customer(models.Model):
     """Clientes. OneToOne con CustomerProfile."""
-    dni = models.CharField(max_length=13, unique=True, verbose_name='DNI/RUC')
+    dni = models.CharField(max_length=13, unique=True, verbose_name='DNI/RUC', validators=[validate_cedula_ec])
     first_name = models.CharField(max_length=100, verbose_name='Nombre')
     last_name = models.CharField(max_length=100, verbose_name='Apellido')
     email = models.EmailField(blank=True, null=True)
