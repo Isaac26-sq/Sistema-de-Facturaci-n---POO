@@ -38,7 +38,7 @@ class PurchaseListView(ExportMixin, LoginRequiredMixin, ListView):
     model = Purchase
     template_name = 'purchasing/purchase_list.html'
     context_object_name = 'items'
-    paginate_by = 5
+    paginate_by = 3
     export_filename = 'compras'
     ALL_COLUMNS = PURCHASE_ALL_COLUMNS
 

@@ -12,7 +12,6 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
-
 class ExportMixin:
     """
     Mixin genérico: añade exportación PDF y Excel a cualquier ListView.
@@ -228,3 +227,7 @@ class ExportMixin:
         params.pop('export', None)
         ctx['query_params'] = params.urlencode()
         return ctx
+
+
+
+

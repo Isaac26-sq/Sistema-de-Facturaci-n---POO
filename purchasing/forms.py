@@ -20,7 +20,7 @@ PurchaseDetailFormSet = inlineformset_factory(
     Purchase,          # Modelo padre
     PurchaseDetail,    # Modelo hijo
     fields=['product', 'quantity', 'unit_cost'],
-    extra=3,
+    extra=1,
     can_delete=True,
     widgets={
         'product': forms.Select(attrs={'class': 'form-select'}),

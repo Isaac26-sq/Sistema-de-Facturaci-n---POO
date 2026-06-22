@@ -15,9 +15,13 @@ from .forms import (
     ProductSearchForm, BrandSearchForm, ProductGroupSearchForm,
     SupplierSearchForm, CustomerSearchForm, InvoiceSearchForm,
 )
+
 from decimal import Decimal
-from shared.mixins import StaffRequiredMixin
+from shared.mixins import StaffRequiredMixin, ProtectedDeleteMixin
 from shared.decorators import audit_action
+from django.db.models import ProtectedError
+from django.contrib import messages
+from django.shortcuts import redirect
 
 # === HOME (Página principal) ===
 @login_required
@@ -377,8 +381,14 @@ def brand_update(request, pk):
 def brand_delete(request, pk):
     brand = get_object_or_404(Brand, pk=pk)
     if request.method == 'POST':
-        brand.delete()
-        messages.success(request, 'Brand eliminada exitosamente!')
+        try:
+            brand.delete()
+            messages.success(request, 'Marca eliminada exitosamente!')
+        except ProtectedError:
+            messages.error(
+                request,
+                f'No se puede eliminar "{brand.name}" porque tiene productos asociados.'
+            )
         return redirect('billing:brand_list')
     return render(request, 'billing/brand_confirm_delete.html', {'object': brand})
 
@@ -450,11 +460,11 @@ class ProductGroupUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'billing/product_group_form.html'; 
     success_url = reverse_lazy('billing:productgroup_list')
 
-class ProductGroupDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
-    model = ProductGroup;
-    template_name = 'billing/product_group_confirm_delete.html';
+class ProductGroupDeleteView(ProtectedDeleteMixin, LoginRequiredMixin, DeleteView):
+    model = ProductGroup
+    template_name = 'billing/product_group_confirm_delete.html'
     success_url = reverse_lazy('billing:productgroup_list')
-    staff_redirect_url = '/groups/'
+    protected_message = 'No se puede eliminar el grupo porque tiene productos asociados.'
 
 class ProductGroupDetailView(LoginRequiredMixin, DetailView):
     model = ProductGroup
@@ -527,12 +537,12 @@ class SupplierUpdateView(LoginRequiredMixin, UpdateView):
     form_class = SupplierForm; 
     template_name = 'billing/supplier_form.html'; 
     success_url = reverse_lazy('billing:supplier_list')
-class SupplierDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
-    model = Supplier;
-    template_name = 'billing/supplier_confirm_delete.html';
+class SupplierDeleteView(ProtectedDeleteMixin, LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+    model = Supplier
+    template_name = 'billing/supplier_confirm_delete.html'
     success_url = reverse_lazy('billing:supplier_list')
     staff_redirect_url = '/suppliers/'
-
+    protected_message = 'No se puede eliminar el proveedor porque tiene productos asociados.'
 class SupplierDetailView(LoginRequiredMixin, DetailView):
     model = Supplier
     template_name = 'billing/supplier_detail.html'
@@ -632,11 +642,12 @@ class ProductUpdateView(LoginRequiredMixin, UpdateView):
         messages.success(self.request, f'Producto "{form.instance.name}" actualizado exitosamente.')
         return super().form_valid(form)
 
-class ProductDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
-    model = Product; 
-    template_name = 'billing/product_confirm_delete.html'; 
+class ProductDeleteView(ProtectedDeleteMixin, LoginRequiredMixin, DeleteView):
+    model = Product
+    template_name = 'billing/product_confirm_delete.html'
     success_url = reverse_lazy('billing:product_list')
-    staff_redirect_url = '/products/'
+    protected_message = 'No se puede eliminar el producto porque está en una o más facturas.'
+        
 class ProductDetailView(LoginRequiredMixin, DetailView):
     model = Product; 
     template_name = 'billing/product_detail.html'; 
