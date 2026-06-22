@@ -639,7 +639,7 @@
 # Execution time: 0.000208s [Database: default]
 # <QuerySet [<Product: Galaxy S24 (Samsung)>]>
 
-# Agregaciones
+# -----------------------  Agregaciones   -----------------------
 
 # In [62]: from django.db.models import Sum, Avg, Max, Min, Count
 
@@ -688,7 +688,7 @@
 
 
 # In [67]: Product.objects.annotate(ns=Count('suppliers')).values('name', 'ns')
-# Out[67]: SELECT "billing_product"."name" AS "name",
+# Out[67    ]: SELECT "billing_product"."name" AS "name",
 #        COUNT("billing_product_suppliers"."supplier_id") AS "ns"
 #   FROM "billing_product"
 #   LEFT OUTER JOIN "billing_product_suppliers"
