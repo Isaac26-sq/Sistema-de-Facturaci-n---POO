@@ -9,6 +9,7 @@ from django.contrib.auth import login
 from .mixins import ExportMixin
 from .models import *
 from django.db.models import Q
+from django.db.models import F 
 from .forms import (
     SignUpForm, BrandForm, ProductGroupForm, SupplierForm,
     ProductForm, CustomerForm, InvoiceForm, InvoiceDetailFormSet,
@@ -803,6 +804,9 @@ def invoice_create(request):
             invoice = form.save()
             formset.instance = invoice
             formset.save()
+
+            for d in invoice.details.all():
+                Product.objects.filter(pk=d.product_id).update(stock=F('stock') - d.quantity)
 
             subtotal = sum(d.subtotal for d in invoice.details.all())
             invoice.subtotal = subtotal
