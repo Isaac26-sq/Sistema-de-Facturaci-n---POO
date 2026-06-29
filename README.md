@@ -10,6 +10,13 @@ Aplicación web desarrollada en **Django** para la gestión integral de un siste
 
 ---
 
+intalacion correcta --
+
+python -m venv ent_sales_A2          # 1. crear venv fresco
+ent_sales_A2\Scripts\activate        # 2. activarlo
+pip install -r requirements.txt      # 3. instalar dependencias
+python manage.py runserver           # 4. ¡correr! (sin migrate, sin createsuperuser)
+
 ## 📑 Tabla de contenidos
 
 - [Características](#-características)
