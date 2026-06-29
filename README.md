@@ -434,6 +434,132 @@ dni = models.CharField(..., validators=[validate_cedula_ec])
 
 - **Validador de cédula**: El validador `validate_cedula_ec` en `shared/validators.py` verifica que la cédula ecuatoriana sea válida según el algoritmo oficial.
 
+
+
+
+## 🔎 Guía de consultas ORM (referencia)
+
+Referencia rápida de las consultas con el ORM de Django aplicadas a este sistema de Facturación y Compras. Cada enunciado va acompañado de su sentencia correcta. Útil para pruebas en el shell (`python manage.py shell`).
+
+> Imports necesarios al inicio de la sesión:
+> ```python
+> from django.db.models import Q, F, Sum, Avg, Max, Min, Count
+> ```
+
+### CREATE y READ
+
+Una clase = una tabla, un objeto = una fila, `.objects` = la puerta de entrada. `.create()` guarda sin necesidad de `.save()`. `.get()` devuelve **un objeto** (lanza error si encuentra cero o varios); `.filter()` devuelve un **QuerySet**.
+
+| Enunciado | Sentencia |
+|-----------|-----------|
+| Crear una marca `'Sony'` (sin descripción) en una variable. | `sony = Brand.objects.create(name='Sony')` |
+| Traer todos los productos. | `Product.objects.all()` |
+| Traer el único cliente con dni `'0912345678'`. | `Customer.objects.get(dni='0912345678')` |
+| Traer los productos con stock distinto de cero. | `Product.objects.exclude(stock=0)` |
+| Contar cuántas marcas hay. | `Brand.objects.count()` |
+| Crear un grupo `'Perifericos'` en una variable. | `perifericos = ProductGroup.objects.create(name='Perifericos')` |
+| Traer todas las marcas. | `Brand.objects.all()` |
+| Productos con precio mayor a 800. | `Product.objects.filter(unit_price__gt=800)` |
+| Productos cuyo nombre contenga `'tab'` (sin importar mayúsculas). | `Product.objects.filter(name__icontains='tab')` |
+| ¿Existe algún producto con stock cero? (True/False) | `Product.objects.filter(stock=0).exists()` |
+
+**Lookups:** `__gt` (mayor que) · `__lt` (menor que) · `__range=(a, b)` (entre, incluidos) · `__icontains` (contiene, ignora mayúsculas).
+**Otros:** `exclude` (lo contrario de filter) · `order_by('-campo')` (`-` = descendente) · `count()` · `exists()`.
+
+### UPDATE y DELETE
+
+Un objeto → `get` + cambiar atributo + **`.save()` obligatorio**. Muchos → `filter().update()` (devuelve cuántas filas cambió; no lanza error si no coincide nada).
+
+| Enunciado | Sentencia |
+|-----------|-----------|
+| Traer `'Sony'`, cambiar descripción a `'Japanese electronics'` y guardar. | `s = Brand.objects.get(name='Sony'); s.description = 'Japanese electronics'; s.save()` |
+| Masivo: `is_active=False` a productos con stock cero. | `Product.objects.filter(stock=0).update(is_active=False)` |
+| Borrar la marca `'Sony'`. | `Brand.objects.get(name='Sony').delete()` |
+| Masivo: `is_active=True` a productos con stock mayor a 0. | `Product.objects.filter(stock__gt=0).update(is_active=True)` |
+| Borrar el grupo `'Perifericos'`. | `ProductGroup.objects.get(name='Perifericos').delete()` |
+
+**Comportamiento `on_delete`:** `CASCADE` borra en cascada · `PROTECT` bloquea con `ProtectedError` · `SET_NULL` deja el campo en `NULL`.
+
+### Relaciones (FK, M2M, OneToOne)
+
+`.` (punto) cuando ya tienes el objeto · `__` (doble guion) cuando filtras. Lado "uno" → un objeto; lado "muchos" → un QuerySet.
+
+| Enunciado | Sentencia |
+|-----------|-----------|
+| FK adelante: nombre de la marca del `'Galaxy S24'`. | `galaxy = Product.objects.get(name='Galaxy S24'); galaxy.brand.name` |
+| FK atrás: productos de la marca `'Samsung'`. | `samsung = Brand.objects.get(name='Samsung'); samsung.products.all()` |
+| FK atrás: contar los productos de `'Samsung'`. | `samsung.products.count()` |
+| M2M: agregar un proveedor al `'Galaxy S24'`. | `techdist = Supplier.objects.get(name='TechDist'); galaxy.suppliers.add(techdist)` |
+| M2M: mostrar los proveedores del `'Galaxy S24'`. | `galaxy.suppliers.all()` |
+| M2M: quitar un proveedor del `'Galaxy S24'`. | `galaxy.suppliers.remove(techdist)` |
+| OneToOne: `credit_limit` del perfil del cliente `'0912345678'`. | `client = Customer.objects.get(dni='0912345678'); client.profile.credit_limit` |
+| OneToOne: `taxpayer_type` del perfil de ese cliente. | `client.profile.taxpayer_type` |
+
+**Métodos ManyToMany:**
+
+| Método | Tenía [A, B], ejecuto… | Queda con |
+|--------|------------------------|-----------|
+| `add(C)` | suma sin borrar | [A, B, C] |
+| `remove(B)` | quita ese vínculo | [A] |
+| `clear()` | quita todos los vínculos | [] |
+| `set([C])` | reemplaza por la lista | [C] |
+
+> `remove()` y `clear()` **desvinculan**, no borran el `Supplier` de la base de datos. `.delete()` sí lo elimina.
+
+**Filtrar cruzando relaciones:**
+```python
+Product.objects.filter(brand__name='Samsung')          # FK
+Product.objects.filter(suppliers__name='TechDist')     # M2M
+Customer.objects.filter(profile__taxpayer_type='ruc')  # OneToOne
+```
+
+### Q() y F()
+
+`Q()` permite el **OR** (operador `|`), que no se puede expresar de otra forma. `F()` opera con el valor actual de una columna directamente en la base de datos.
+
+| Enunciado | Sentencia |
+|-----------|-----------|
+| Productos de marca `'Samsung'` **O** con stock mayor a 100. | `Product.objects.filter(Q(brand__name='Samsung') | Q(stock__gt=100))` |
+| Productos con precio menor a 50 **O** mayor a 1000. | `Product.objects.filter(Q(unit_price__lt=50) | Q(unit_price__gt=1000))` |
+| Subir el stock de todos los productos en 10 (en la BD). | `Product.objects.update(stock=F('stock') + 10)` |
+| Subir el precio de todos los productos un 10% (en la BD). | `Product.objects.update(unit_price=F('unit_price') * 1.10)` |
+
+**Operadores de `Q()`:** `|` (OR) · `&` (AND) · `~` (NOT).
+
+> Comas en `filter` = AND (todas las condiciones); `|` con `Q()` = OR (basta una). Tras un `update()` con `F()`, la variable en memoria queda desactualizada: recargar con `objeto.refresh_from_db()`.
+
+### Agregaciones (aggregate vs annotate)
+
+`aggregate()` devuelve **un número resumen de todo** (un diccionario). `annotate()` devuelve **un número por cada grupo** (un QuerySet).
+
+| Enunciado | Sentencia |
+|-----------|-----------|
+| Precio promedio de todos los productos. | `Product.objects.aggregate(avg=Avg('unit_price'))` |
+| Precio máximo y mínimo en una sola consulta. | `Product.objects.aggregate(max=Max('unit_price'), min=Min('unit_price'))` |
+| Suma del `total` de las facturas del cliente `'0912345678'`. | `Invoice.objects.filter(customer__dni='0912345678').aggregate(total=Sum('total'))` |
+| Por cada marca: nombre y cuántos productos tiene. | `Brand.objects.annotate(n=Count('products')).values('name', 'n')` |
+| Por cada producto: nombre y cuántos proveedores tiene. | `Product.objects.annotate(ns=Count('suppliers')).values('name', 'ns')` |
+
+> Regla práctica: "de todos / en total / promedio general" → `aggregate`; "por cada / agrupado por" → `annotate`.
+
+### Errores comunes
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| `NameError` | Variable no creada. | Traer el objeto a una variable con `get()` primero. |
+| `IntegrityError: UNIQUE` | Crear algo que ya existe. | Si ya existe, traerlo con `get`, no con `create`. |
+| `AttributeError` (related manager) | Pedir a un objeto un manager del otro lado. | Verificar de qué lado de la relación se parte. |
+| `DoesNotExist` | Un `get()` no encontró nada. | Verificar el nombre exacto con `values_list`. |
+| `MultipleObjectsReturned` | Un `get()` encontró varios. | Usar `filter`, o un campo único (dni). |
+| Update devuelve `0` | El `filter` no coincidió con nada. | Revisar el valor exacto del filtro. |
+
+**Inspección útil en el shell:**
+```python
+Brand.objects.values_list('name', flat=True)  # nombres exactos de una tabla
+objeto.refresh_from_db()                       # recargar un objeto desde la BD
+```
+
+---
 ### Posibles mejoras futuras
 
 - Agregar reportes (resumen de ventas por período, top 10 productos, etc.).
